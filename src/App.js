@@ -245,7 +245,7 @@ Return ONLY the resume text. No explanations, no markdown, no backticks.`;
     const API_KEY = "YOUR_API_KEY_HERE";
 
     try {
-      const response = await fetch("https://corsproxy.io/?https://api.anthropic.com/v1/messages", {
+      const response = await fetch("https://api.anthropic.com/v1/messages", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
