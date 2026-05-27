@@ -242,7 +242,7 @@ FORMATTING RULES (follow exactly):
 Return ONLY the resume text. No explanations, no markdown, no backticks.`;
 
     // ⚠️ PASTE YOUR ANTHROPIC API KEY BELOW (get one at console.anthropic.com)
-    const API_KEY = "YOUR_API_KEY_HERE";
+    const API_KEY = process.env.REACT_APP_API_KEY;
 
     try {
       const response = await fetch("https://api.anthropic.com/v1/messages", {
