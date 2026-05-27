@@ -242,26 +242,22 @@ FORMATTING RULES (follow exactly):
 Return ONLY the resume text. No explanations, no markdown, no backticks.`;
 
     
-    const API_KEY = process.env.REACT_APP_API_KEY;
+    const API_KEY = process.env.REACT_APP_GEMINI_KEY;
 
     try {
-      const response = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-api-key": API_KEY,
-          "anthropic-version": "2023-06-01",
-          "anthropic-dangerous-direct-browser-access": "true",
-        },
-        body: JSON.stringify({
-          model: "claude-haiku-4-5",
-          max_tokens: 1024,
-          messages: [{ role: "user", content: prompt }]
-        })
-      });
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }]
+          })
+        }
+      );
       const data = await response.json();
       if (data.error) throw new Error(data.error.message);
-      const text = data.content?.map(c => c.text || "").join("\n") || "";
+      const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
       setResume(text);
       setStep("result");
     } catch (e) {
