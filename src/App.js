@@ -3,7 +3,6 @@ import { useState } from "react";
 // ─── Google Font (Nunito for UI, resume uses Calibri stack) ───────────────────
 const FONT_LINK = "https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&display=swap";
 
-const STEPS = ["intro", "personal", "education", "experience", "extras", "generating", "result"];
 const STEP_LABELS = ["Personal", "School", "Experience", "Skills & More"];
 
 const INITIAL_FORM = {
@@ -76,9 +75,6 @@ function ProgressBar({ step }) {
 
 // ─── Download as HTML page (prints/saves as clean 1-2 page PDF) ───────────────
 function buildResumeHTML(name, resumeText) {
-  const escaped = resumeText
-    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-
   // Convert plain-text resume to styled HTML
   const lines = resumeText.split("\n");
   let html = "";
@@ -90,10 +86,10 @@ function buildResumeHTML(name, resumeText) {
       html += `<div class="r-contact">${trimmed}</div>`;
     } else if (/^={3,}/.test(trimmed) || /^-{3,}/.test(trimmed)) {
       // skip underline chars
-    } else if (trimmed && lines[i + 1] && /^[=\-]{3,}/.test(lines[i + 1]?.trim())) {
+    } else if (trimmed && lines[i + 1] && /^[=-]{3,}/.test(lines[i + 1]?.trim())) {
       html += `<div class="r-section">${trimmed}</div>`;
     } else if (trimmed.startsWith("•") || trimmed.startsWith("-")) {
-      html += `<li class="r-bullet">${trimmed.replace(/^[•\-]\s*/, "")}</li>`;
+      html += `<li class="r-bullet">${trimmed.replace(/^[•-]\s*/, "")}</li>`;
     } else if (trimmed === "") {
       html += `<div class="r-gap"></div>`;
     } else {
@@ -324,7 +320,7 @@ Return ONLY the resume text. No explanations, no markdown, no backticks.`;
         els.push(<div key={i} style={{ fontFamily: "Calibri, 'Gill Sans', sans-serif", fontSize: 10, color: "#555", textAlign: "center", marginBottom: 8 }}>{trimmed}</div>);
       } else if (/^={3,}/.test(trimmed) || /^-{3,}/.test(trimmed)) {
         // skip
-      } else if (trimmed && lines[i + 1] && /^[=\-]{3,}/.test(lines[i + 1]?.trim())) {
+      } else if (trimmed && lines[i + 1] && /^[=-]{3,}/.test(lines[i + 1]?.trim())) {
         els.push(<div key={i} style={{ fontFamily: "Calibri, 'Gill Sans', sans-serif", fontSize: 11, fontWeight: 700, color: "#0f3a6b", textTransform: "uppercase", letterSpacing: "0.07em", borderBottom: "1.5px solid #0f3a6b", paddingBottom: 2, marginTop: 10, marginBottom: 5 }}>{trimmed}</div>);
       } else if (trimmed.startsWith("•")) {
         els.push(<div key={i} style={{ fontFamily: "Calibri, 'Gill Sans', sans-serif", fontSize: 10.5, paddingLeft: 14, color: "#1a1a1a", marginBottom: 1.5, lineHeight: 1.35 }}>{trimmed}</div>);
