@@ -241,7 +241,7 @@ FORMATTING RULES (follow exactly):
 
 Return ONLY the resume text. No explanations, no markdown, no backticks.`;
 
-    // ⚠️ PASTE YOUR ANTHROPIC API KEY BELOW (get one at console.anthropic.com)
+    
     const API_KEY = process.env.REACT_APP_API_KEY;
 
     try {
@@ -254,8 +254,8 @@ Return ONLY the resume text. No explanations, no markdown, no backticks.`;
           "anthropic-dangerous-direct-browser-access": "true",
         },
         body: JSON.stringify({
-          model: "claude-sonnet-4-20250514",
-          max_tokens: 1000,
+          model: "claude-haiku-4-5-20251001",
+          max_tokens: 1024,
           messages: [{ role: "user", content: prompt }]
         })
       });
