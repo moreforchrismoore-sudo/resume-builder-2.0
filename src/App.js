@@ -8,6 +8,7 @@ const STEP_LABELS = ["Personal", "School", "Experience", "Skills & More"];
 const INITIAL_FORM = {
   name: "", email: "", phone: "", city: "", state: "", targetRole: "",
   school: "", gradYear: "", gpa: "", coursework: "", honors: "",
+  college: "", collegeMajor: "", collegeYear: "", collegeGpa: "",
   jobs: [{ title: "", company: "", dates: "", bullets: "" }],
   activities: "", sports: "", volunteering: "", skills: "", awards: "", certifications: "", languages: "",
 };
@@ -195,6 +196,24 @@ function App() {
 
     const hasJobs = form.jobs.some(j => j.title || j.company);
 
+    // Sort jobs reverse chronological (newest first) by end date heuristic
+    const sortedJobs = [...form.jobs].sort((a, b) => {
+      const getEndYear = (dates) => {
+        if (!dates) return 0;
+        const lower = dates.toLowerCase();
+        if (lower.includes("present") || lower.includes("current") || lower.includes("now")) return 99999;
+        const nums = dates.match(/\d{4}/g);
+        return nums ? Math.max(...nums.map(Number)) : 0;
+      };
+      return getEndYear(b.dates) - getEndYear(a.dates);
+    });
+
+    const collegeSection = form.college ? `
+College/University: ${form.college}
+Major/Program: ${form.collegeMajor || "not provided"}
+Year/Status: ${form.collegeYear || "not provided"}
+College GPA: ${form.collegeGpa || "not provided"}` : "";
+
     const prompt = `You are a professional resume writer specializing in high school student resumes for summer jobs, part-time work, and entry-level positions.
 
 Create a clean, professional, one-page resume for this high school student.
@@ -207,14 +226,14 @@ Location: ${form.city}${form.state ? `, ${form.state}` : ""}
 Target Job/Role: ${form.targetRole}
 
 EDUCATION:
-School: ${form.school}
+High School: ${form.school}
 Expected Graduation: ${form.gradYear}
-GPA: ${form.gpa || "not provided"}
+High School GPA: ${form.gpa || "not provided"}
 Relevant Coursework: ${form.coursework || "none listed"}
-Academic Honors: ${form.honors || "none listed"}
+Academic Honors: ${form.honors || "none listed"}${collegeSection}
 
-WORK EXPERIENCE:
-${hasJobs ? form.jobs.map((j, i) => `Position ${i+1}: ${j.title} at ${j.company} (${j.dates})\nDetails: ${j.bullets}`).join("\n\n") : "No work experience — skip this section."}
+WORK EXPERIENCE (listed newest first — keep this order):
+${hasJobs ? sortedJobs.map((j, i) => `Position ${i+1}: ${j.title} at ${j.company} (${j.dates})\nDetails: ${j.bullets}`).join("\n\n") : "No work experience — skip this section."}
 
 ACTIVITIES & CLUBS: ${form.activities || "none"}
 SPORTS & ATHLETICS: ${form.sports || "none"}
@@ -234,10 +253,12 @@ FORMATTING RULES (follow exactly):
 7. Keep the entire resume to ONE tight page — be concise
 8. Sections to include (only if content exists): OBJECTIVE, EDUCATION, WORK EXPERIENCE, ACTIVITIES & LEADERSHIP, VOLUNTEER & COMMUNITY SERVICE, SKILLS, AWARDS & HONORS
 9. The Objective should be 1 sentence tailored to: ${form.targetRole}
-10. For high school students, lead with Education (it's often the strongest section)
-11. Omit LinkedIn unless provided
-12. Do NOT include a photo, references, or "References available upon request"
-13. Make it feel professional but age-appropriate — this is a high schooler, not a college grad
+10. If college info is provided, list it ABOVE high school in Education (most recent first)
+11. For college students, adjust the tone slightly — they are no longer "high school students" but still entry-level
+12. Omit LinkedIn unless provided
+13. Do NOT include a photo, references, or "References available upon request"
+14. Make it feel professional but age-appropriate
+15. Work experience MUST appear in reverse chronological order (newest job first)
 
 Return ONLY the resume text. No explanations, no markdown, no backticks.`;
 
@@ -432,6 +453,26 @@ Return ONLY the resume text. No explanations, no markdown, no backticks.`;
           <Field label="Relevant Coursework" hint="List 3–5 classes relevant to the job — e.g. Business, Health, Computer Science.">
             <textarea style={taStyle} value={form.coursework} onChange={e => set("coursework", e.target.value)} placeholder="Business Fundamentals, AP Computer Science, Health & Safety, Personal Finance..." />
           </Field>
+
+          <div style={{ borderTop: `1.5px dashed #c0d8f0`, margin: "22px 0 20px" }} />
+          <div style={{ background: "#f0f6ff", borderRadius: 10, padding: "14px 16px", marginBottom: 20, border: "1px solid #c8ddf5" }}>
+            <div style={{ fontFamily: UI_FONT, fontWeight: 800, fontSize: 13, color: NAV, marginBottom: 4 }}>🎓 College / University <span style={{ fontWeight: 500, color: "#7a8fa6", fontSize: 12 }}>(optional — for college students or recent grads)</span></div>
+            <div style={{ fontSize: 12, color: "#5a7090", marginBottom: 14 }}>If you're in college or have completed any college coursework, add it here — it'll appear above high school on your resume.</div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 18px" }}>
+              <Field label="College / University Name">
+                <input style={inputStyle} value={form.college} onChange={e => set("college", e.target.value)} placeholder="University of Washington" />
+              </Field>
+              <Field label="Major / Program">
+                <input style={inputStyle} value={form.collegeMajor} onChange={e => set("collegeMajor", e.target.value)} placeholder="Business Administration, Nursing, CS..." />
+              </Field>
+              <Field label="Year / Status" hint="e.g. Sophomore, Junior, Expected Grad May 2027">
+                <input style={inputStyle} value={form.collegeYear} onChange={e => set("collegeYear", e.target.value)} placeholder="Sophomore, Expected May 2027..." />
+              </Field>
+              <Field label="College GPA" hint="Include if 3.0+">
+                <input style={inputStyle} value={form.collegeGpa} onChange={e => set("collegeGpa", e.target.value)} placeholder="3.6 / 4.0" />
+              </Field>
+            </div>
+          </div>
           <div style={{ display: "flex", justifyContent: "space-between", marginTop: 8 }}>
             <button style={btnSecondary} onClick={() => setStep("personal")}>← Back</button>
             <button style={btnPrimary} onClick={() => setStep("experience")} disabled={!form.school}>Next: Experience →</button>
@@ -513,6 +554,95 @@ Return ONLY the resume text. No explanations, no markdown, no backticks.`;
         </div>
       )}
 
+      {/* EDIT & REGENERATE */}
+      {step === "edit" && (
+        <div style={{ maxWidth: 760, margin: "0 auto" }}>
+          <div style={{ ...card, marginBottom: 16 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
+              <button style={{ ...btnSecondary, padding: "7px 16px", fontSize: 13 }} onClick={() => setStep("result")}>← Back to Resume</button>
+              <h2 style={{ fontFamily: UI_FONT, fontSize: 20, fontWeight: 900, color: NAV, margin: 0 }}>Edit Your Info</h2>
+            </div>
+            <p style={{ color: "#7a8fa6", fontSize: 13, marginBottom: 28 }}>Update anything below, then regenerate your resume. Your changes won't be lost.</p>
+
+            {/* Personal */}
+            <div style={{ background: LIGHT, borderRadius: 12, padding: "18px 20px", marginBottom: 18, border: "1px solid #cfe0f5" }}>
+              <div style={{ fontWeight: 800, fontSize: 12, color: NAV, marginBottom: 14, textTransform: "uppercase", letterSpacing: "0.07em" }}>Personal Info</div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 18px" }}>
+                <Field label="Full Name *"><input style={inputStyle} value={form.name} onChange={e => set("name", e.target.value)} /></Field>
+                <Field label="Phone"><input style={inputStyle} value={form.phone} onChange={e => set("phone", e.target.value)} /></Field>
+                <Field label="Email *"><input style={inputStyle} value={form.email} onChange={e => set("email", e.target.value)} /></Field>
+                <Field label="City, State"><input style={inputStyle} value={form.city} onChange={e => set("city", e.target.value)} /></Field>
+              </div>
+              <Field label="Target Job or Role *">
+                <input style={inputStyle} value={form.targetRole} onChange={e => set("targetRole", e.target.value)} />
+              </Field>
+            </div>
+
+            {/* Education */}
+            <div style={{ background: LIGHT, borderRadius: 12, padding: "18px 20px", marginBottom: 18, border: "1px solid #cfe0f5" }}>
+              <div style={{ fontWeight: 800, fontSize: 12, color: NAV, marginBottom: 14, textTransform: "uppercase", letterSpacing: "0.07em" }}>Education</div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 18px" }}>
+                <Field label="High School Name *"><input style={inputStyle} value={form.school} onChange={e => set("school", e.target.value)} /></Field>
+                <Field label="Expected Graduation Year"><input style={inputStyle} value={form.gradYear} onChange={e => set("gradYear", e.target.value)} /></Field>
+                <Field label="GPA"><input style={inputStyle} value={form.gpa} onChange={e => set("gpa", e.target.value)} /></Field>
+                <Field label="Academic Honors"><input style={inputStyle} value={form.honors} onChange={e => set("honors", e.target.value)} /></Field>
+              </div>
+              <Field label="Relevant Coursework"><textarea style={taStyle} value={form.coursework} onChange={e => set("coursework", e.target.value)} /></Field>
+              <div style={{ borderTop: "1px dashed #c0d8f0", margin: "10px 0 16px" }} />
+              <div style={{ fontSize: 12, fontWeight: 700, color: "#5a7090", marginBottom: 10 }}>🎓 College (optional)</div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 18px" }}>
+                <Field label="College / University"><input style={inputStyle} value={form.college} onChange={e => set("college", e.target.value)} /></Field>
+                <Field label="Major / Program"><input style={inputStyle} value={form.collegeMajor} onChange={e => set("collegeMajor", e.target.value)} /></Field>
+                <Field label="Year / Status"><input style={inputStyle} value={form.collegeYear} onChange={e => set("collegeYear", e.target.value)} /></Field>
+                <Field label="College GPA"><input style={inputStyle} value={form.collegeGpa} onChange={e => set("collegeGpa", e.target.value)} /></Field>
+              </div>
+            </div>
+
+            {/* Work Experience */}
+            <div style={{ background: LIGHT, borderRadius: 12, padding: "18px 20px", marginBottom: 18, border: "1px solid #cfe0f5" }}>
+              <div style={{ fontWeight: 800, fontSize: 12, color: NAV, marginBottom: 14, textTransform: "uppercase", letterSpacing: "0.07em" }}>Work Experience</div>
+              {form.jobs.map((job, i) => (
+                <div key={i} style={{ background: "#fff", borderRadius: 10, padding: "14px 16px", marginBottom: 12, border: "1px solid #dde8f2" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: NAV }}>Position {i + 1}</span>
+                    {form.jobs.length > 1 && (
+                      <span onClick={() => removeJob(i)} style={{ cursor: "pointer", color: "#c0392b", fontWeight: 600, fontSize: 12 }}>✕ Remove</span>
+                    )}
+                  </div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 14px" }}>
+                    <Field label="Job Title"><input style={inputStyle} value={job.title} onChange={e => setJob(i, "title", e.target.value)} /></Field>
+                    <Field label="Employer"><input style={inputStyle} value={job.company} onChange={e => setJob(i, "company", e.target.value)} /></Field>
+                  </div>
+                  <Field label="Dates"><input style={{ ...inputStyle, maxWidth: 220 }} value={job.dates} onChange={e => setJob(i, "dates", e.target.value)} /></Field>
+                  <Field label="What did you do?"><textarea style={taStyle} value={job.bullets} onChange={e => setJob(i, "bullets", e.target.value)} /></Field>
+                </div>
+              ))}
+              <button onClick={addJob} style={{ ...btnSecondary, fontSize: 13 }}>+ Add Position</button>
+            </div>
+
+            {/* Skills & More */}
+            <div style={{ background: LIGHT, borderRadius: 12, padding: "18px 20px", marginBottom: 18, border: "1px solid #cfe0f5" }}>
+              <div style={{ fontWeight: 800, fontSize: 12, color: NAV, marginBottom: 14, textTransform: "uppercase", letterSpacing: "0.07em" }}>Skills & Activities</div>
+              <Field label="Clubs & Activities"><textarea style={taStyle} value={form.activities} onChange={e => set("activities", e.target.value)} /></Field>
+              <Field label="Sports & Athletics"><input style={inputStyle} value={form.sports} onChange={e => set("sports", e.target.value)} /></Field>
+              <Field label="Volunteering"><textarea style={taStyle} value={form.volunteering} onChange={e => set("volunteering", e.target.value)} /></Field>
+              <Field label="Skills"><textarea style={{ ...taStyle, minHeight: 64 }} value={form.skills} onChange={e => set("skills", e.target.value)} /></Field>
+              <Field label="Awards & Honors"><input style={inputStyle} value={form.awards} onChange={e => set("awards", e.target.value)} /></Field>
+              <Field label="Certifications"><input style={inputStyle} value={form.certifications} onChange={e => set("certifications", e.target.value)} /></Field>
+            </div>
+
+            {error && (
+              <div style={{ background: "#fdecea", border: "1px solid #f5c6c2", borderRadius: 8, padding: "11px 15px", color: "#b03020", fontSize: 13, marginBottom: 16 }}>{error}</div>
+            )}
+            <div style={{ display: "flex", justifyContent: "flex-end" }}>
+              <button style={{ ...btnAccent, fontSize: 15, padding: "13px 32px" }} onClick={generateResume}>
+                ✨ Regenerate Resume
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* GENERATING */}
       {step === "generating" && (
         <div style={{ ...card, textAlign: "center", padding: "56px 40px" }}>
@@ -545,6 +675,9 @@ Return ONLY the resume text. No explanations, no markdown, no backticks.`;
                 <p style={{ color: "#7a8fa6", fontSize: 12.5, margin: "4px 0 0" }}>Preview below. Download to open and save as PDF.</p>
               </div>
               <div style={{ display: "flex", gap: 10 }}>
+                <button style={btnSecondary} onClick={() => setStep("edit")}>
+                  ✏️ Edit & Regenerate
+                </button>
                 <button style={btnSecondary} onClick={copyResume}>
                   {copied ? "✓ Copied!" : "📋 Copy Text"}
                 </button>
